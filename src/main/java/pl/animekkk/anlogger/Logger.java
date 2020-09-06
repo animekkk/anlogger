@@ -1,11 +1,16 @@
 package pl.animekkk.anlogger;
 
+import com.evanlennick.retry4j.config.RetryConfig;
+import com.evanlennick.retry4j.config.RetryConfigBuilder;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.concurrent.Callable;
 
 public class Logger {
 
@@ -13,8 +18,7 @@ public class Logger {
         INFO("<INFO> ", "\033[0;32m"),
         ERROR("<ERROR>", "\033[0;31m"),
         WARN("<WARN> ", "\033[0;33m"),
-        DEBUG("<DEBUG>", "\033[0;35m"),
-        NO_SAVE("<ERROR>", "\033[0;31m");
+        DEBUG("<DEBUG>", "\033[0;35m");
 
         private final String name;
         private final String color;
@@ -32,6 +36,10 @@ public class Logger {
             return this.color;
         }
     }
+
+    private static final RetryConfig retryConfig = new RetryConfigBuilder()
+            .exponentialBackoff5Tries5Sec()
+            .build();
 
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static boolean runtimeSave = false;
@@ -58,15 +66,19 @@ public class Logger {
         outputFile = file;
     }
 
-    public static void log(Log type, String... msg) {
+    public static void log(boolean save, Log type, String... msg) {
         String log = type.getName() + " " + simpleDateFormat.format(System.currentTimeMillis()) + " " + String.join(" ", msg);
         System.out.println(type.getColor() + log + "\033[0m"); //Reset color
-        if(type == Log.NO_SAVE) return;
+        if(!save) return;
         if(runtimeSave) {
             writeLog(log);
         } else {
             addToCache(log);
         }
+    }
+
+    public static void log(Log type, String... msg) {
+        log(true, type, msg);
     }
 
     public static void log(Log type, Object... object) {
@@ -109,14 +121,15 @@ public class Logger {
                 logFile.createNewFile();
             } catch (IOException exception) {
                 exception.printStackTrace();
-                log(Log.NO_SAVE, "Cannot create log file.");
+                log(false, Log.ERROR, "Cannot create log file.");
+                return;
             }
         }
         try {
             Files.write(logFile.toPath(), Arrays.asList(logs), StandardOpenOption.APPEND);
         } catch (IOException exception) {
             exception.printStackTrace();
-            log(Log.NO_SAVE, "Cannot write log to file.");
+            log(false, Log.ERROR, "Cannot write log to file.");
         }
 
     }
