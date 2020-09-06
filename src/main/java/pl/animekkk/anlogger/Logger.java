@@ -13,7 +13,8 @@ public class Logger {
         INFO("<INFO> ", "\033[0;32m"),
         ERROR("<ERROR>", "\033[0;31m"),
         WARN("<WARN> ", "\033[0;33m"),
-        DEBUG("<DEBUG>", "\033[0;35m");
+        DEBUG("<DEBUG>", "\033[0;35m"),
+        NO_SAVE("<ERROR>", "\033[0;31m");
 
         private final String name;
         private final String color;
@@ -32,7 +33,7 @@ public class Logger {
         }
     }
 
-    private static SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+    private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static boolean runtimeSave = false;
     private static int cacheSize = -1;
     //When cache size is set to -1 then you have to save logs manually using saveCache();
@@ -41,7 +42,7 @@ public class Logger {
     private static File outputFile = null;
 
     public static void setDatePattern(String pattern) {
-        simpleDateFormat = new SimpleDateFormat(pattern);
+        simpleDateFormat.applyPattern(pattern);
     }
 
     public static void setRuntimeSave(boolean runtime) {
@@ -59,7 +60,8 @@ public class Logger {
 
     public static void log(Log type, String... msg) {
         String log = type.getName() + " " + simpleDateFormat.format(System.currentTimeMillis()) + " " + String.join(" ", msg);
-        System.out.println(type.getColor() + log);
+        System.out.println(type.getColor() + log + "\033[0m"); //Reset color
+        if(type == Log.NO_SAVE) return;
         if(runtimeSave) {
             writeLog(log);
         } else {
@@ -74,7 +76,6 @@ public class Logger {
 
     public static void addToCache(String log) {
         logsCache.add(log);
-        System.out.println(cacheSize <= logsCache.size());
         if(cacheSize > 0 && cacheSize <= logsCache.size()) saveCache();
     }
 
@@ -83,16 +84,23 @@ public class Logger {
             log(Log.WARN, "Cannot save cache when run-time save is enabled.");
             return;
         }
-        logsCache.forEach(Logger::writeLog);
+        writeLog(logsCache.toArray(new String[0]));
         logsCache.clear();
     }
 
-    public static void writeLog(String log) {
+    public static void writeLog(String... logs) {
         File logFile = outputFile;
         if(outputFile == null) {
             logFile = new File(simpleDateFormat.format(System.currentTimeMillis())
+                    .replaceAll("/", "")
                     .replaceAll("/", "∕")
                     .replaceAll(":", "꞉")
+                    .replaceAll("\\*", "")
+                    .replaceAll("\\?", "")
+                    .replaceAll("\"", "")
+                    .replaceAll("<", "")
+                    .replaceAll(">", "")
+                    .replaceAll("\\|", "")
                     .replaceAll(" ", "-")
                     + ".txt");
             if(runtimeSave) outputFile = logFile;
@@ -102,17 +110,16 @@ public class Logger {
                 logFile.createNewFile();
             } catch (IOException exception) {
                 exception.printStackTrace();
-                log(Log.ERROR, "Cannot create log file.");
+                log(Log.NO_SAVE, "Cannot create log file.");
             }
         }
         try {
-            log += "\n";
-            Files.write(logFile.toPath(), log.getBytes(), StandardOpenOption.APPEND);
+            Files.write(logFile.toPath(), Arrays.asList(logs), StandardOpenOption.APPEND);
         } catch (IOException exception) {
             exception.printStackTrace();
-            log(Log.ERROR, "Cannot write log to file.");
+            log(Log.NO_SAVE, "Cannot write log to file.");
         }
-    }
 
+    }
 
 }
