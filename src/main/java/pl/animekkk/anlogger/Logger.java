@@ -92,7 +92,6 @@ public class Logger {
         File logFile = outputFile;
         if(outputFile == null) {
             logFile = new File(simpleDateFormat.format(System.currentTimeMillis())
-                    .replaceAll("/", "")
                     .replaceAll("/", "∕")
                     .replaceAll(":", "꞉")
                     .replaceAll("\\*", "")

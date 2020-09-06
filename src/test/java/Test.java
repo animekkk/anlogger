@@ -7,8 +7,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class Test {
 
     public static void main(String[] args) throws InterruptedException {
-        Logger.setRuntimeSave(false);
-        Logger.setMaxCache(25);
+        Logger.setRuntimeSave(true);
         Logger.log(Logger.Log.DEBUG, "TEST", new Date(), new AtomicInteger());
 
         for (int i = 0; i < 100; i++) {
