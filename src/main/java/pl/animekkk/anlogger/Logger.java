@@ -1,16 +1,11 @@
 package pl.animekkk.anlogger;
 
-import com.evanlennick.retry4j.config.RetryConfig;
-import com.evanlennick.retry4j.config.RetryConfigBuilder;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.text.SimpleDateFormat;
-import java.time.temporal.ChronoUnit;
 import java.util.*;
-import java.util.concurrent.Callable;
 
 public class Logger {
 
@@ -36,10 +31,6 @@ public class Logger {
             return this.color;
         }
     }
-
-    private static final RetryConfig retryConfig = new RetryConfigBuilder()
-            .exponentialBackoff5Tries5Sec()
-            .build();
 
     private static final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
     private static boolean runtimeSave = false;
